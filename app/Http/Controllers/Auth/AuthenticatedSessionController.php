@@ -33,15 +33,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Check if user has root access
-        $user = Auth::user();
-        if (!$this->isRootUser($user)) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return redirect()->route('login')->with('error', 'Access denied. Root privileges required.');
-        }
-
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -57,18 +48,5 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
-    }
-
-    /**
-     * Check if the user has root privileges.
-     *
-     * @param  \App\Models\User  $user
-     * @return bool
-     */
-    protected function isRootUser($user): bool
-    {
-        return $user->email === 'admin@example.com' || 
-               $user->email === 'root@example.com' ||
-               str_ends_with($user->email, '@root.local');
     }
 }
