@@ -33,7 +33,6 @@ class EnsureRootAccess
     protected function isRootUser($user): bool
     {
         // Check if the user's email matches the root pattern
-        // You can modify this logic based on your requirements
         return $user->email === 'admin@example.com' || 
                $user->email === 'root@example.com' ||
                str_ends_with($user->email, '@root.local');
