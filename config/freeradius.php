@@ -7,7 +7,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the path to your FreeRADIUS configuration directory.
-    | Default is /etc/freeradius/3.0
+    | For Docker environments, this should be a path inside the container.
     |
     */
     'config_path' => env('FREERADIUS_CONFIG_PATH', '/etc/freeradius/3.0'),
@@ -18,7 +18,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the path to your FreeRADIUS log directory.
-    | Default is /var/log/freeradius
+    | For Docker environments, this should be a path inside the container.
     |
     */
     'log_path' => env('FREERADIUS_LOG_PATH', '/var/log/freeradius'),
