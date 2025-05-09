@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureRootAccess
@@ -15,23 +16,26 @@ class EnsureRootAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if the user is authenticated and is root
-        if (!auth()->check() || !$this->isRootUser(auth()->user())) {
-            auth()->logout();
-            return redirect()->route('login')->with('error', 'Only root access is allowed.');
+        if (!Auth::check() || !$this->isRootUser(Auth::user())) {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Access denied. Root privileges required.');
         }
 
         return $next($request);
     }
 
     /**
-     * Check if the user is a root user
+     * Check if the user has root privileges.
+     *
+     * @param  \App\Models\User  $user
+     * @return bool
      */
     protected function isRootUser($user): bool
     {
-        // Check if the user's email matches the root email pattern
+        // Check if the user's email matches the root pattern
+        // You can modify this logic based on your requirements
         return $user->email === 'admin@example.com' || 
-               $user->email === 'root@localhost' ||
-               $user->email === 'root@' . gethostname();
+               $user->email === 'root@example.com' ||
+               str_ends_with($user->email, '@root.local');
     }
 } 

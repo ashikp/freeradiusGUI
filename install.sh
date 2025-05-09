@@ -16,12 +16,12 @@ echo -e "${GREEN}Starting FreeRADIUS GUI Installation...${NC}"
 # Install required packages
 echo "Installing required packages..."
 apt-get update
-apt-get install -y apache2 php libapache2-mod-php php-mysql php-xml php-curl php-mbstring php-zip unzip git composer
+apt-get install -y apache2 php libapache2-mod-php php-sqlite3 php-xml php-curl php-mbstring php-zip unzip git composer
 
 # Install FreeRADIUS if not already installed
 if ! command -v freeradius &> /dev/null; then
     echo "Installing FreeRADIUS..."
-    apt-get install -y freeradius freeradius-mysql
+    apt-get install -y freeradius freeradius-sqlite
 fi
 
 # Create application directory
@@ -38,11 +38,7 @@ fi
 # Set up Laravel
 echo "Setting up Laravel..."
 cd $APP_DIR
-composer install --no-dev --optimize-autoloader
-php artisan key:generate
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+composer install --no-dev --optimize-autoloader --force
 
 # Create .env file if it doesn't exist
 if [ ! -f "$APP_DIR/.env" ]; then
@@ -50,22 +46,40 @@ if [ ! -f "$APP_DIR/.env" ]; then
     cp .env.example .env
     sed -i 's/APP_ENV=local/APP_ENV=production/' .env
     sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' .env
-    sed -i 's/DB_DATABASE=laravel/DB_DATABASE=freeradius_gui/' .env
-    sed -i 's/DB_USERNAME=root/DB_USERNAME=freeradius_gui/' .env
-    sed -i 's/DB_PASSWORD=/DB_PASSWORD=freeradius_gui_password/' .env
+    sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=sqlite/' .env
+    # Remove MySQL specific settings
+    sed -i '/DB_HOST/d' .env
+    sed -i '/DB_PORT/d' .env
+    sed -i '/DB_DATABASE/d' .env
+    sed -i '/DB_USERNAME/d' .env
+    sed -i '/DB_PASSWORD/d' .env
     echo "FREERADIUS_CONFIG_PATH=/etc/freeradius/3.0" >> .env
     echo "FREERADIUS_LOG_PATH=/var/log/freeradius" >> .env
 fi
 
-# Set up database
-echo "Setting up database..."
-mysql -e "CREATE DATABASE IF NOT EXISTS freeradius_gui;"
-mysql -e "CREATE USER IF NOT EXISTS 'freeradius_gui'@'localhost' IDENTIFIED BY 'freeradius_gui_password';"
-mysql -e "GRANT ALL PRIVILEGES ON freeradius_gui.* TO 'freeradius_gui'@'localhost';"
-mysql -e "FLUSH PRIVILEGES;"
+# Create SQLite database
+echo "Setting up SQLite database..."
+touch $APP_DIR/database/database.sqlite
+chown root:root $APP_DIR/database/database.sqlite
+chmod 644 $APP_DIR/database/database.sqlite
+
+# Generate application key
+php artisan key:generate
 
 # Run migrations
 php artisan migrate --force
+
+# Install and build frontend
+echo "Installing frontend dependencies..."
+cd $APP_DIR
+npm install
+echo "Building frontend assets..."
+npm run build
+
+# Cache configuration
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 
 # Set up Apache
 echo "Setting up Apache..."
@@ -105,6 +119,7 @@ chown -R root:root $APP_DIR
 chmod -R 755 $APP_DIR
 chmod -R 777 $APP_DIR/storage
 chmod -R 777 $APP_DIR/bootstrap/cache
+chmod 777 $APP_DIR/database
 
 # Create .htaccess file for additional security
 cat > $APP_DIR/public/.htaccess << 'EOL'
@@ -140,6 +155,12 @@ cat > $APP_DIR/public/.htaccess << 'EOL'
     
     # Protect sensitive files
     <FilesMatch "^\.">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # Protect database file
+    <FilesMatch "\.sqlite$">
         Order allow,deny
         Deny from all
     </FilesMatch>
