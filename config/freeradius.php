@@ -7,6 +7,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the path to your FreeRADIUS configuration directory.
+    | Default is /etc/freeradius/3.0
     |
     */
     'config_path' => env('FREERADIUS_CONFIG_PATH', '/etc/freeradius/3.0'),
@@ -16,10 +17,11 @@ return [
     | FreeRADIUS Log Path
     |--------------------------------------------------------------------------
     |
-    | This is the path to your FreeRADIUS log file.
+    | This is the path to your FreeRADIUS log directory.
+    | Default is /var/log/freeradius
     |
     */
-    'log_path' => env('FREERADIUS_LOG_PATH', '/var/log/freeradius/radius.log'),
+    'log_path' => env('FREERADIUS_LOG_PATH', '/var/log/freeradius'),
 
     /*
     |--------------------------------------------------------------------------
