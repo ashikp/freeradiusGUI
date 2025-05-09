@@ -18,9 +18,18 @@ return new class extends Migration
             $table->string('secret');
             $table->string('shortname')->nullable();
             $table->string('nas_type')->nullable();
-            $table->text('comment')->nullable();
+            $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            // Add indexes for better performance
+            $table->index('ip_address');
+            $table->index('shortname');
+            $table->index('is_active');
+
+            // Add unique constraints
+            $table->unique('ip_address');
+            $table->unique('name');
         });
     }
 
