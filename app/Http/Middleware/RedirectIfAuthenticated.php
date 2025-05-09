@@ -21,16 +21,6 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                // Check if the route requires root access
-                if ($request->route()->middleware() && in_array('root', $request->route()->middleware())) {
-                    // If user is not root, log them out and redirect to login
-                    if (!Auth::user()->email === 'admin@example.com' && 
-                        !Auth::user()->email === 'root@example.com' && 
-                        !str_ends_with(Auth::user()->email, '@root.local')) {
-                        Auth::logout();
-                        return redirect()->route('login')->with('error', 'Access denied. Root privileges required.');
-                    }
-                }
                 return redirect(RouteServiceProvider::HOME);
             }
         }
