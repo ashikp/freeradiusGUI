@@ -12,6 +12,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -21,13 +27,14 @@ Route::get('/', function () {
     ]);
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'root'])->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
 
     // Database Settings
     Route::resource('database-settings', DatabaseSettingController::class);
-    Route::post('database-settings/{databaseSetting}/activate', [DatabaseSettingController::class, 'activate'])
-        ->name('database-settings.activate');
+    Route::post('database-settings/{setting}/activate', [DatabaseSettingController::class, 'activate'])->name('database-settings.activate');
 
     // RADIUS Clients
     Route::resource('radius-clients', RadiusClientController::class);
@@ -52,8 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // FreeRADIUS Configuration
-    Route::get('/free-radius-config', [FreeRadiusConfigController::class, 'index'])->name('free-radius-config.index');
-    Route::put('/free-radius-config', [FreeRadiusConfigController::class, 'update'])->name('free-radius-config.update');
+    Route::get('free-radius-config', [FreeRadiusConfigController::class, 'index'])->name('free-radius-config.index');
+    Route::put('free-radius-config', [FreeRadiusConfigController::class, 'update'])->name('free-radius-config.update');
 });
 
 require __DIR__.'/auth.php';
