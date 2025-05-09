@@ -16,7 +16,7 @@ echo -e "${GREEN}Starting FreeRADIUS GUI Installation...${NC}"
 # Install required packages
 echo "Installing required packages..."
 apt-get update
-apt-get install -y apache2 php libapache2-mod-php php-sqlite3 php-xml php-curl php-mbstring php-zip unzip git composer
+apt-get install -y apache2 php8.4 libapache2-mod-php8.4 php8.4-sqlite3 php8.4-xml php8.4-curl php8.4-mbstring php8.4-zip unzip git composer
 
 # Install FreeRADIUS if not already installed
 if ! command -v freeradius &> /dev/null; then
@@ -38,7 +38,7 @@ fi
 # Set up Laravel
 echo "Setting up Laravel..."
 cd $APP_DIR
-composer install --no-dev --optimize-autoloader --force
+composer install
 
 # Create .env file if it doesn't exist
 if [ ! -f "$APP_DIR/.env" ]; then
@@ -68,6 +68,7 @@ php artisan key:generate
 
 # Run migrations
 php artisan migrate --force
+php artisan db:seed
 
 # Install and build frontend
 echo "Installing frontend dependencies..."
@@ -81,8 +82,8 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Set up Apache
-echo "Setting up Apache..."
+# Set up Apache to run as root
+echo "Setting up Apache to run as root..."
 cat > /etc/apache2/sites-available/freeradius-gui.conf << 'EOL'
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
@@ -93,6 +94,15 @@ cat > /etc/apache2/sites-available/freeradius-gui.conf << 'EOL'
         AllowOverride All
         Require all granted
     </Directory>
+
+    # Run PHP as root
+    <IfModule mod_php.c>
+        php_admin_value user root
+        php_admin_value group root
+        php_admin_value disable_functions "exec,passthru,shell_exec,system"
+        php_admin_flag allow_url_fopen off
+        php_admin_flag allow_url_include off
+    </IfModule>
 
     ErrorLog ${APACHE_LOG_DIR}/freeradius-gui-error.log
     CustomLog ${APACHE_LOG_DIR}/freeradius-gui-access.log combined
@@ -108,6 +118,7 @@ EOL
 # Enable required Apache modules
 a2enmod rewrite
 a2enmod headers
+a2enmod php8.4
 
 # Enable the site and disable default
 a2ensite freeradius-gui.conf
@@ -171,30 +182,6 @@ EOL
 echo "Restarting services..."
 systemctl restart apache2
 systemctl restart freeradius
-
-# Create systemd service for the application
-echo "Creating systemd service..."
-cat > /etc/systemd/system/freeradius-gui.service << 'EOL'
-[Unit]
-Description=FreeRADIUS GUI Service
-After=network.target
-
-[Service]
-Type=simple
-User=root
-Group=root
-WorkingDirectory=/opt/freeradius-gui
-ExecStart=/usr/bin/php artisan serve --host=127.0.0.1 --port=8000
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable freeradius-gui
-systemctl start freeradius-gui
 
 echo -e "${GREEN}Installation completed!${NC}"
 echo -e "The FreeRADIUS GUI is now accessible at http://localhost"
